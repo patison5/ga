@@ -1,0 +1,28 @@
+body {
+	/*background: #000;*/
+}
+.info {}
+.data-info {
+	border: 1px solid #ccc;
+	padding: 10px;
+	/*position: absolute;*/
+	background: rgba(0,0,0, .8);
+	color: #fff;
+	border-spacing: 0;
+	margin-bottom: 20px;
+}
+
+.data-info_cell {
+	padding: 5px 20px;
+}
+
+
+.data-table__info {
+	position: absolute;
+	left: 0;
+	top: 0;
+	padding: 10px;
+	background: rgba(0,0,0,.4);
+	color: #fff;
+	/*display: none;*/
+}
