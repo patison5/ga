@@ -14,7 +14,7 @@ var ShipRoadPoints = {
 
   A2: {
     latitue: -15.0,
-    longtitude: 60.0,
+    longtitude: 53.0,
     country: 'RUSSIA'
   },
   B2: {

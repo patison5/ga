@@ -9,7 +9,6 @@ var MERCATOR = {
       y: 128 + 0.5 * Math.log((1 + siny) / (1 - siny)) * -(256 / (2 * Math.PI))
      };
   },
-
   fromPointToLatLng: function(point){
 
      return {
@@ -17,16 +16,13 @@ var MERCATOR = {
              Math.PI / 2)/ (Math.PI / 180),
       lng:  (point.x - 128) / (256 / 360)
      };
-
   },
-
   getTileAtLatLng:function(latLng, zoom){
     var t=Math.pow(2,zoom),
         s=256/t,
         p=this.fromLatLngToPoint(latLng);
         return {x:Math.floor(p.x/s),y:Math.floor(p.y/s),z:zoom};
   },
-
   getTileBounds:function(tile){
     tile=this.normalizeTile(tile);
     var t=Math.pow(2,tile.z),
@@ -45,7 +41,6 @@ var MERCATOR = {
     tile.y=((tile.y%t)+t)%t;
     return tile;
   }
-
 }
 
 var RENDER_SPEED = 1000;
@@ -71,7 +66,8 @@ var clon = 70;
 var ww = 1024;
 var hh = 800;
 
-var zoom = 1;
+var zoom = 3.5;
+const simulationSpeed = 1000; 
 
 // preloading backgound image
 function preload() {
@@ -81,7 +77,7 @@ function preload() {
     ww + 'x' + hh +
     '?access_token=pk.eyJ1IjoicGF0aXNvbjUiLCJhIjoiY2twMnlmZXRtMDV6aTJ3cjJ5bnJ4a3c1ZiJ9.H9pqDbqnHNnQZ3xXerqmkg');
 
-  console.log(mapimg)
+  // console.log(mapimg)
 }
 
 //calculation map X coordinate
@@ -93,29 +89,25 @@ function mercX(lon) {
 }
 
 function mercX2lon(x) {
+
   return (PI * x / (256 * pow(2, zoom)) - PI) / PI * 180
 }
 
 //calculation map Y coordinate
 function mercY(lat) {
+  // console.log("lat:", lat)
   lat = radians(lat);
   var a = (256 / PI) * pow(2, zoom);
   var b = tan(PI / 4 + lat / 2);
   var c = PI - log(b);
+  // console.log("a:", b, log(b))
   return a * c;
 }
 
 function mercY2lat(y) {
-  var a = pow(2.718281828, PI - (y * PI / (256 * pow(2, zoom))))
-  var b = atan(a - PI / 4)
-  return b * 180 * 2 / PI
+  var a = pow(Math.E, (PI - y * PI / (256 * pow(2, zoom))))
+  return degrees(2 * (atan(a) - PI / 4))
 }
-// function mercY2lat(y) {
-//   var a = pow(2.718281828, (PI - y * PI / (256 * pow(2, zoom))))
-//   return 2 * (atan(a) - PI / 4)
-// }
-
-
 
 
 // Ship class
@@ -200,22 +192,33 @@ const Ship = function (arriving, destination, safeArea, speed) {
   //function that create a new position
   this.updatePosition = function () {
     // let delta = Math.abs(this.destinationCors.x - this.arrivingCors.x) / 100 + randomInteger(0, 2);
-    let distance = this.getDistanceByPoints(this.destinationCors.x, this.destinationCors.y, this.arrivingCors.x, this.arrivingCors.y);
-    let delta = this.speed.ms * 0.0001;
-    console.log(delta)
-    // return;
-    // console.log(delta);
+    // let distance = this.getDistanceByPoints(this.destinationCors.x, this.destinationCors.y, this.arrivingCors.x, this.arrivingCors.y);
+
+    // let distance = this.getDistanceByPoints(this.currentCors.x, this.currentCors.y, this.arrivingCors.x, this.arrivingCors.y);
+    let latlon = {
+      x: mercX2lon(this.currentCors.x),
+      y: mercY2lat(this.currentCors.y)
+    }
+
+    latlon.x = latlon.x + 0.0001 * this.speed.ms
+    latlon.y = latlon.y + 0.0001 * this.speed.ms
+
+    let newCors = {
+      x: mercX(latlon.x),
+      y: this.getNewYPosition(mercX(latlon.x))
+    }
+
+    let distance = this.getDistanceByPoints(this.currentCors.x, this.currentCors.y, newCors.x, newCors.y) * 200;
 
     if (this.currentCors.x > this.destinationCors.x) {
-      this.currentCors.x -= delta;
+      this.currentCors.x -= distance;
       this.currentCors.y = this.getNewYPosition(this.currentCors.x)
     } else {
-      this.currentCors.x += delta;
+      this.currentCors.x += distance;
       this.currentCors.y = this.getNewYPosition(this.currentCors.x)
     }
 
-    if (Math.abs(this.currentCors.x.toFixed(3) - this.destinationCors.x.toFixed(3)) < delta) {
-      // _isEnd = true;
+    if (Math.abs(this.currentCors.x.toFixed(3) - this.destinationCors.x.toFixed(3)) < distance) {
       this._isMoving = false;
       // noLoop();
     }
@@ -270,10 +273,50 @@ const Ship = function (arriving, destination, safeArea, speed) {
     if (this._isMainShip) {
       // this.drawNorth()
        for (var i = 1; i < ships.length; i++) {
-        let distance = this.getDistanceByPoints(this.currentCors.x, this.currentCors.y, ships[i].currentCors.x, ships[i].currentCors.y)
-        if (distance < 90) {
+        var distance = this.getDistanceByPoints(this.currentCors.x, this.currentCors.y, ships[i].currentCors.x, ships[i].currentCors.y)
+        if (distance < 100) {
           stroke(100);
           line(this.currentCors.x, this.currentCors.y, ships[i].currentCors.x, ships[i].currentCors.y);
+
+
+          let latlon1 = {
+            x: mercX2lon(this.currentCors.x),
+            y: mercY2lat(this.currentCors.y)
+          }
+
+          let latlon2 = {
+            x: mercX2lon(ships[i].currentCors.x),
+            y: mercY2lat(ships[i].currentCors.y)
+          }
+
+          // var norDistance = this.getDistanceByPoints(latlon1.x, latlon1.y, latlon2.x, latlon2.y)
+          var norDistance = mercX2lon(this.currentCors.x) - mercX2lon(ships[i].currentCors.x) * simulationSpeed
+
+          // console.log(norDistance)
+
+          var lat1 = mercY2lat(this.currentCors.y);
+          var lat2 = mercY2lat(ships[i].currentCors.y);
+          var lon1 = mercX2lon(this.currentCors.x);
+          var lon2 = mercX2lon(ships[i].currentCors.x);
+
+          const R = 6371e3; // metres
+          const φ1 = lat1 * Math.PI/180; // φ, λ in radians
+          const φ2 = lat2 * Math.PI/180;
+          const Δφ = (lat2-lat1) * Math.PI/180;
+          const Δλ = (lon2-lon1) * Math.PI/180;
+
+          const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                    Math.cos(φ1) * Math.cos(φ2) *
+                    Math.sin(Δλ/2) * Math.sin(Δλ/2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+          var d = R * c; // in metres
+
+          d = d / 100 / zoom;
+
+          stroke(255);
+          textSize(8)
+          text(d.toFixed(2)+"", (this.currentCors.x + ships[i].currentCors.x) / 2, (this.currentCors.y + ships[i].currentCors.y) / 2)
         }
         if (distance < 20) {
           console.log("Угроза столкновения! Дистанция до угрожающего корабля " + distance)
@@ -343,9 +386,8 @@ function setup() {
   ships = [
     // new Ship(ShipRoadPoints.A4, ShipRoadPoints.B4, 25, 30),
     new Ship(ShipRoadPoints.A4, ShipRoadPoints.B4, 25, 30),
-    // new Ship(ShipRoadPoints.A1, ShipRoadPoints.B1, 25, 30),
-    // new Ship(ShipRoadPoints.A2, ShipRoadPoints.B2, 20, 20),
-    // new Ship(ShipRoadPoints.A3, ShipRoadPoints.B3, 30, 17),
+    new Ship(ShipRoadPoints.A2, ShipRoadPoints.B2, 20, 40),
+    new Ship(ShipRoadPoints.A3, ShipRoadPoints.B3, 30, 40),
   ]
 
   // ships[0].arrivingCors =  MERCATOR.fromLatLngToPoint({
@@ -391,43 +433,9 @@ function setup() {
     y: mercPoint.y
   })
 
-  // var k = MERCATOR.getTileBounds(MERCATOR.normalizeTile({
-  //   x: coord.x,
-  //   y: coord.y,
-  //   z:zoom
-  // }))
-
-  console.log(startPoint)
-  console.log(latFromPoint)
-  console.log("------------")
-  console.log("mercPoint", mercPoint)
-  console.log("merc2Point", merc2Point)
-
-  console.log("startPoint", startPoint)
-  console.log("1", {
-    x: mercX(startPoint.lng),
-    y: mercY(startPoint.lat)
-  })
-
-  console.log("startPoint", startPoint)
-  console.log("2 ", {
-    lat: mercY2lat(mercY(startPoint.lat)),
-    lng: mercX2lon(mercX(startPoint.lng))
-  })
-  // {
-  //   x: 164,
-  //   y: 145
-  // }
-  // {
-  //   lat: -23.24134610238612,
-  //   lng: 50.625
-  // }
-
-
-  // console.log(testCors)
-
-  // console.log(test.currentCors)
-
+  // console.log(startPoint)
+  // console.log("CHECKING BLYAT", startPoint.lng, mercX2lon(mercX(startPoint.lng)))
+  console.log("CHECKING BLYAT", startPoint.lat, mercY2lat(mercY(startPoint.lat)))
 }
 
 //********************************* DRAW *********************************
