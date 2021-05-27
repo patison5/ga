@@ -64,12 +64,58 @@ var GMath = {
 	div (a, b) {
 	    return (a - a % b) / b;
 	},
+
+	getX (line, y) {
+		var x = (y - line.p1.y) / (line.p2.y - line.p1.y) * (line.p2.x - line.p1.x) + line.p1.x
+		return x
+	},
+
+	pointBelongToSegment (A, B, C) {
+		if (((A.x <= C.x) && (C.x <= B.x)) || ((B.x <= C.x) && (C.x <= A.x))) {
+			return true
+		}
+		return false
+	},
+
+	hypotenusus(start, finish) {
+		let dx = finish.x - start.x
+		let dy = finish.y - start.y
+		return Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2))
+	},
+
+	nextPoint(start, finish, speed, t){
+		let delta = this.hypotenusus(start, finish)
+		let time = delta / speed
+		let vx = (finish.x - start.x) / time
+		let vy = (finish.y - start.y) / time
+		let x = start.x + vx * parseFloat(t)
+		let y = start.y + vy * parseFloat(t)
+		return new GPoint(y, x)
+	},
+}
+
+var Line = function (p1, p2) {
+	this.p1 = p1;
+	this.p2 = p2;
+	this.a = p1.y - p2.y;
+	this.b = p2.x - p1.x;
+	this.c = -(p1.x * p2.y - p2.x * p1.y);
+}
+
+var Intersection = function (line1, line2)  {
+	let d = line1.a * line2.b - line1.b * line2.a
+	let dx = line1.c * line2.b - line1.b * line2.c
+	let dy = line1.a * line2.c - line1.c * line2.a
+	if (d != 0) {
+		return new GPoint(dy / d, dx / d)
+	}
+	return undefined
 }
 
 class GPoint {
 	constructor(lat, lon) {
-		this.y = lat;
 		this.x = lon;
+		this.y = lat;
 	}
 }
 
@@ -77,6 +123,17 @@ class GPoint {
 class GRoad {
 	constructor(arrayOfPoints) {
 		this.wayDots  = arrayOfPoints;
+		this.hasCollision = false;
+	}
+
+	fullDistance() {
+		var distance = 0.0
+		for (var i = 0; i < this.wayDots.length - 1; i++) {
+			let point1 = this.wayDots[i]
+			let point2 = this.wayDots[i+1]
+			distance += GMath.hypotenusus(point1, point2)
+		}
+		return distance
 	}
 }
 class GShip {
@@ -99,13 +156,17 @@ class Genetic {
 		this.selfFinish = selfFinish;
 		this.childrenRoads = [];
 
-		for (var i = 0; i < 5; i++) {
+		for (var i = 0; i < 10; i++) {
 			var newWay = new GRoad([
 				selfStart,
-				new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), GMath.randomInteger(selfStart.x, selfFinish.x)),
-				new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), GMath.randomInteger(selfStart.x, selfFinish.x)),
-				new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), GMath.randomInteger(selfStart.x, selfFinish.x)),
-				new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), GMath.randomInteger(selfStart.x, selfFinish.x)),
+				// new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), GMath.randomInteger(selfStart.x, selfFinish.x)),
+				// new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), GMath.randomInteger(selfStart.x, selfFinish.x)),
+				// new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), GMath.randomInteger(selfStart.x, selfFinish.x)),
+				// new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), GMath.randomInteger(selfStart.x, selfFinish.x)),
+				new GPoint(6, 3),
+				new GPoint(3, 6),
+				new GPoint(2, 9),
+				new GPoint(7, 12),
 				selfFinish
 			])
 
@@ -113,46 +174,144 @@ class Genetic {
 		}
 	};
 
-	fullRoad() { }
-
 	start() {
 		for (var start = 0; start < this.amountOfCircles; start++) {
 			this.selection();
 			this.crossing();
 			this.mutating();
 		}
+
+		console.log("BEST: ", this.childrenRoads[0])
 	}
 
 	selection() {
+		console.log("Кол-во маршрутов: ", this.childrenRoads.length)
 		for (var i = 0; i < this.childrenRoads.length; i++) {
 			let road = this.childrenRoads[i];
 			let wayDots = road.wayDots;
 
-			for (var ship in this.concuredShips) {
-				for (var j = 0; j < GMath.div(wayDots.length, 2); j++) {
-					// console.log(wayDots)
-					//1. найти пересечения на этих участках.
-					//2. найти точки пересечения
-					// --
-					//1. находим время прохождения до этой точки 
-					//2. смотрим, где находится вражеский корабль по истечении данного времени
-					//3. Если дистанция является наикратчайшей - все, пизда рулю
+			// console.log(road)
 
-					 
+			for (var shipId in this.concuredShips) {
+				var probableCollision = []
+
+				for (var j = 0; j < wayDots.length - 1; j++) {
+					var p1 = new GPoint(wayDots[j].y, wayDots[j].x);		//сделано для копирования в новый объект
+					var p2 = new GPoint(wayDots[j+1].y, wayDots[j+1].x); 	//сделано для копирования в новый объект
+
+					var inter = new Intersection(new Line(p1, p2), new Line(this.concuredShips[shipId].start, this.concuredShips[shipId].finish))
+					if (inter == undefined) continue;
+					var x = GMath.getX(new Line(p1, p2), inter.y)
+
+					// x = parseFloat(x.toFixed(5));
+					// inter.x = parseFloat(inter.x.toFixed(5));
+					// inter.y = parseFloat(inter.y.toFixed(5));
+
+					// p1.x = parseFloat(p1.x.toFixed(5))
+					// p1.y = parseFloat(p1.y.toFixed(5))
+					// p2.x = parseFloat(p2.x.toFixed(5))
+					// p2.y = parseFloat(p2.y.toFixed(5))
+
+					if ((x == inter.x) && (GMath.pointBelongToSegment(p1, p2, new GPoint(inter.y, x)))) {
+						probableCollision.push(new Line(wayDots[j], wayDots[j+1]))
+					}
+				}
+
+				// console.log("size", probableCollision.length)
+				var time = 0;
+				for (var j = 0; j < wayDots.length - 1; j++) {
+					var p1 = new GPoint(wayDots[j].y, wayDots[j].x);		//сделано для копирования в новый объект
+					var p2 = new GPoint(wayDots[j+1].y, wayDots[j+1].x); 	//сделано для копирования в новый объект
+
+					var contains = false;
+					for (var pc in probableCollision) {
+						let pc1 = probableCollision[pc].p1;
+						let pc2 = probableCollision[pc].p2;
+
+						if ((pc1.x == p1.x) && (pc1.y == p1.y) && (pc2.x == p2.x) && (pc2.y == p2.y)) {
+							contains = true;
+							break;
+						}
+					}
+
+					if (contains) {
+						var inter = new Intersection(new Line(p1, p2), new Line(this.concuredShips[shipId].start, this.concuredShips[shipId].finish))
+						if (inter == undefined) continue;
+
+						time += GMath.hypotenusus(p1, inter) / this.selfSpeed
+						let ship = this.concuredShips[shipId];
+
+
+						let concuredShipPosition = GMath.nextPoint(ship.start, ship.finish, ship.speed, time)
+						let delta = GMath.hypotenusus(inter, concuredShipPosition)
+						let maxRadius = 20
+						if (delta <= maxRadius) {
+							this.childrenRoads[i].hasCollision = true;
+						}
+
+					} else {
+						time += GMath.hypotenusus(p1, inter) / this.selfSpeed;
+					}
 				}
 			}
+			console.log(road)
+		}
+
+		console.log("s")
+
+		var withCollision = this.childrenRoads.filter(road => road.hasCollision);
+		var withOutCollision = this.childrenRoads.filter(road => !road.hasCollision);
+
+		var sortedWithCollisions = withCollision.sort(function (a,b) {
+			return a.fullDistance() < b.fullDistance()
+		});
+
+		var sortedWithOutCollisions = withOutCollision.sort(function (a,b) {
+			return a.fullDistance() > b.fullDistance()
+		})
+
+		sortedWithOutCollisions = sortedWithOutCollisions.concat(sortedWithCollisions);
+
+		this.childrenRoads = sortedWithOutCollisions;
+		this.childrenRoads.slice(0, this.amountOfPopulations);
+
+		// console.log("withCollision", withCollision)
+		// console.log("withOutCollision", withOutCollision)
+		// console.log("sortedWithCollisions", sortedWithCollisions)
+		// console.log("sortedWithOutCollisions", sortedWithOutCollisions)
+	}
+
+	crossing() {
+		for (var i = 0; i < GMath.div(this.childrenRoads.length, 2); i++) {
+			var roadX = this.childrenRoads[i]
+			var roadY = this.childrenRoads[i+1]
+			var wayDots = []
+
+			if (roadX.fullDistance() < roadY.fullDistance()) {
+				wayDots = wayDots.concat(roadX.wayDots)
+			} else {
+				wayDots = wayDots.concat(roadY.wayDots)
+			}
+
+			this.childrenRoads.push(new GRoad(wayDots))
 		}
 	}
 
-	crossing() { }
-	mutating() { }
+	mutating() {
+
+	}
 }
 
 
-var gen = new Genetic(1, 1, [
-		new GShip(new GPoint(GMath.mercY(-15.0), GMath.mercX(53.0)), new GPoint(GMath.mercY(-22.0), GMath.mercX(90.0)), 40, 20),
-		new GShip(new GPoint(GMath.mercY(-5.0), GMath.mercX(50.0)),  new GPoint(GMath.mercY(-10.0), GMath.mercX(95.0)), 40, 30)
-	], 50, 30, new GPoint(GMath.mercY(-23.24134610238612), GMath.mercX(50.625)), new GPoint(GMath.mercY(2.0), GMath.mercX(73.0)), 50, 30)
+// var gen = new Genetic(1, 1, [
+// 		new GShip(new GPoint(GMath.mercY(-15.0), GMath.mercX(53.0)), new GPoint(GMath.mercY(-22.0), GMath.mercX(90.0)), 40, 20),
+// 		// new GShip(new GPoint(GMath.mercY(-5.0), GMath.mercX(50.0)),  new GPoint(GMath.mercY(-10.0), GMath.mercX(95.0)), 40, 30)
+// 	], 50, 30, new GPoint(GMath.mercY(-23.24134610238612), GMath.mercX(50.625)), new GPoint(GMath.mercY(2.0), GMath.mercX(73.0)), 50, 30)
+
+var gen = new Genetic(50, 50, [
+		new GShip(new GPoint(4,13), new GPoint(4,0), 40, 20),
+		// new GShip(new GPoint(GMath.mercY(-5.0), GMath.mercX(50.0)),  new GPoint(GMath.mercY(-10.0), GMath.mercX(95.0)), 40, 30)
+	], 50, 30, new GPoint(2,1), new GPoint(6,15), 50, 30)
 
 console.log(gen)
 
