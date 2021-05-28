@@ -159,14 +159,14 @@ class Genetic {
 		for (var i = 0; i < 10; i++) {
 			var newWay = new GRoad([
 				selfStart,
-				// new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), GMath.randomInteger(selfStart.x, selfFinish.x)),
-				// new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), GMath.randomInteger(selfStart.x, selfFinish.x)),
-				// new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), GMath.randomInteger(selfStart.x, selfFinish.x)),
-				// new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), GMath.randomInteger(selfStart.x, selfFinish.x)),
-				new GPoint(6, 3),
-				new GPoint(3, 6),
-				new GPoint(2, 9),
-				new GPoint(7, 12),
+				new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), GMath.randomInteger(selfStart.x, selfFinish.x)),
+				new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), GMath.randomInteger(selfStart.x, selfFinish.x)),
+				new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), GMath.randomInteger(selfStart.x, selfFinish.x)),
+				new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), GMath.randomInteger(selfStart.x, selfFinish.x)),
+				// new GPoint(6, 3),
+				// new GPoint(3, 6),
+				// new GPoint(2, 9),
+				// new GPoint(7, 12),
 				selfFinish
 			])
 
@@ -185,7 +185,7 @@ class Genetic {
 	}
 
 	selection() {
-		console.log("Кол-во маршрутов: ", this.childrenRoads.length)
+		// console.log("Кол-во маршрутов: ", this.childrenRoads.length)
 		for (var i = 0; i < this.childrenRoads.length; i++) {
 			let road = this.childrenRoads[i];
 			let wayDots = road.wayDots;
@@ -203,14 +203,14 @@ class Genetic {
 					if (inter == undefined) continue;
 					var x = GMath.getX(new Line(p1, p2), inter.y)
 
-					// x = parseFloat(x.toFixed(5));
-					// inter.x = parseFloat(inter.x.toFixed(5));
-					// inter.y = parseFloat(inter.y.toFixed(5));
+					x = parseFloat(x.toFixed(5));
+					inter.x = parseFloat(inter.x.toFixed(5));
+					inter.y = parseFloat(inter.y.toFixed(5));
 
-					// p1.x = parseFloat(p1.x.toFixed(5))
-					// p1.y = parseFloat(p1.y.toFixed(5))
-					// p2.x = parseFloat(p2.x.toFixed(5))
-					// p2.y = parseFloat(p2.y.toFixed(5))
+					p1.x = parseFloat(p1.x.toFixed(5))
+					p1.y = parseFloat(p1.y.toFixed(5))
+					p2.x = parseFloat(p2.x.toFixed(5))
+					p2.y = parseFloat(p2.y.toFixed(5))
 
 					if ((x == inter.x) && (GMath.pointBelongToSegment(p1, p2, new GPoint(inter.y, x)))) {
 						probableCollision.push(new Line(wayDots[j], wayDots[j+1]))
@@ -254,10 +254,10 @@ class Genetic {
 					}
 				}
 			}
-			console.log(road)
+			// console.log(road)
 		}
 
-		console.log("s")
+		// console.log("s")
 
 		var withCollision = this.childrenRoads.filter(road => road.hasCollision);
 		var withOutCollision = this.childrenRoads.filter(road => !road.hasCollision);
@@ -273,7 +273,7 @@ class Genetic {
 		sortedWithOutCollisions = sortedWithOutCollisions.concat(sortedWithCollisions);
 
 		this.childrenRoads = sortedWithOutCollisions;
-		this.childrenRoads.slice(0, this.amountOfPopulations);
+		this.childrenRoads = this.childrenRoads.slice(0, this.amountOfPopulations);
 
 		// console.log("withCollision", withCollision)
 		// console.log("withOutCollision", withOutCollision)
@@ -303,15 +303,15 @@ class Genetic {
 }
 
 
-// var gen = new Genetic(1, 1, [
-// 		new GShip(new GPoint(GMath.mercY(-15.0), GMath.mercX(53.0)), new GPoint(GMath.mercY(-22.0), GMath.mercX(90.0)), 40, 20),
-// 		// new GShip(new GPoint(GMath.mercY(-5.0), GMath.mercX(50.0)),  new GPoint(GMath.mercY(-10.0), GMath.mercX(95.0)), 40, 30)
-// 	], 50, 30, new GPoint(GMath.mercY(-23.24134610238612), GMath.mercX(50.625)), new GPoint(GMath.mercY(2.0), GMath.mercX(73.0)), 50, 30)
+var gen = new Genetic(150, 250, [
+		new GShip(new GPoint(GMath.mercY(-15.0), GMath.mercX(53.0)), new GPoint(GMath.mercY(-22.0), GMath.mercX(90.0)), 40, 20),
+		new GShip(new GPoint(GMath.mercY(-5.0), GMath.mercX(50.0)),  new GPoint(GMath.mercY(-10.0), GMath.mercX(95.0)), 40, 30)
+	], 50, 30, new GPoint(GMath.mercY(-23.24134610238612), GMath.mercX(50.625)), new GPoint(GMath.mercY(2.0), GMath.mercX(73.0)), 50, 30)
 
-var gen = new Genetic(50, 50, [
-		new GShip(new GPoint(4,13), new GPoint(4,0), 40, 20),
-		// new GShip(new GPoint(GMath.mercY(-5.0), GMath.mercX(50.0)),  new GPoint(GMath.mercY(-10.0), GMath.mercX(95.0)), 40, 30)
-	], 50, 30, new GPoint(2,1), new GPoint(6,15), 50, 30)
+// var gen = new Genetic(50, 10, [
+// 		new GShip(new GPoint(4,13), new GPoint(4,0), 40, 20),
+// 		// new GShip(new GPoint(GMath.mercY(-5.0), GMath.mercX(50.0)),  new GPoint(GMath.mercY(-10.0), GMath.mercX(95.0)), 40, 30)
+// 	], 50, 30, new GPoint(2,1), new GPoint(6,15), 50, 30)
 
 console.log(gen)
 
@@ -322,7 +322,12 @@ gen.start()
 
 
 
-
+// {x: 3710.896387667001, y: 3280.97546470558}
+// 1: GPoint {x: 3980, y: 3273}
+// 2: GPoint {x: 3845, y: 3257}
+// 3: GPoint {x: 4070, y: 2870}
+// 4: GPoint {x: 4047, y: 3020}
+// 5: GPoint {x: 4070.9237336791384, y: 2864.12162315678}
 
 
 
