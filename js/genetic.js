@@ -92,6 +92,19 @@ var GMath = {
 		let y = start.y + vy * parseFloat(t)
 		return new GPoint(y, x)
 	},
+
+	// Формула гаверсинуса 
+	measure(lat1, lon1, lat2, lon2){  // generally used geo measurement function
+	    var R = 6378.137; // Radius of earth in KM
+	    var dLat = lat2 * Math.PI / 180 - lat1 * Math.PI / 180;
+	    var dLon = lon2 * Math.PI / 180 - lon1 * Math.PI / 180;
+	    var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+	    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+	    Math.sin(dLon/2) * Math.sin(dLon/2);
+	    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+	    var d = R * c;
+	    return d * 1000; // meters
+	},
 }
 
 var Line = function (p1, p2) {
@@ -155,6 +168,10 @@ class Genetic {
 		this.selfStart = selfStart;
 		this.selfFinish = selfFinish;
 		this.childrenRoads = [];
+		this.bestRoad = null;
+
+		// console.log("selfStart", selfStart)
+		// console.log("selfFinish", selfFinish)
 
 		for (var i = 0; i < 10; i++) {
 			var newWay = new GRoad([
@@ -181,6 +198,8 @@ class Genetic {
 			this.mutating();
 		}
 
+		this.selection();
+		this.bestRoad = this.childrenRoads[0]
 		console.log("BEST: ", this.childrenRoads[0])
 	}
 
@@ -298,12 +317,22 @@ class Genetic {
 	}
 
 	mutating() {
-
+		var randomAmount = GMath.randomInteger(1, 10);
+		for (var i = 0; i < randomAmount; i++) {
+			var elementId = GMath.randomInteger(0, this.childrenRoads.length - 1);
+			var selectedRoad = this.childrenRoads[elementId];
+			for (var j = 1; j < selectedRoad.wayDots.length - 1; j++) {
+				// var newX = GMath.randomInteger(this.selfFinish.x, this.selfStart.x);
+				// selectedRoad.wayDots[j].x = newX;
+				var newY = GMath.randomInteger(this.selfStart.y, this.selfFinish.y);
+				selectedRoad.wayDots[j].y = newY;
+			}
+		}
 	}
 }
 
 
-var gen = new Genetic(150, 250, [
+var gen = new Genetic(150,150, [
 		new GShip(new GPoint(GMath.mercY(-15.0), GMath.mercX(53.0)), new GPoint(GMath.mercY(-22.0), GMath.mercX(90.0)), 40, 20),
 		new GShip(new GPoint(GMath.mercY(-5.0), GMath.mercX(50.0)),  new GPoint(GMath.mercY(-10.0), GMath.mercX(95.0)), 40, 30)
 	], 50, 30, new GPoint(GMath.mercY(-23.24134610238612), GMath.mercX(50.625)), new GPoint(GMath.mercY(2.0), GMath.mercX(73.0)), 50, 30)
@@ -314,8 +343,6 @@ var gen = new Genetic(150, 250, [
 // 	], 50, 30, new GPoint(2,1), new GPoint(6,15), 50, 30)
 
 console.log(gen)
-
-gen.start()
 
 
 

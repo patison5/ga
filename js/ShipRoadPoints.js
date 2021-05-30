@@ -12,12 +12,12 @@ var ShipRoadPoints = {
     country: 'RUSSIA'
   },
 
-  A2: {
+  B2: {
     latitue: -15.0,
     longtitude: 53.0,
     country: 'RUSSIA'
   },
-  B2: {
+  A2: {
     latitue: -22.0,
     longtitude: 90.0,
     country: 'RUSSIA'

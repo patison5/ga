@@ -114,6 +114,7 @@ function mercY2lat(y) {
 const Ship = function (arriving, destination, safeArea, speed) {
 
   this.wayDots = []
+  this.currentWayIndex = 2;
 
   this._isMoving = true;
   this.safeAreaRadius = safeArea;
@@ -160,18 +161,40 @@ const Ship = function (arriving, destination, safeArea, speed) {
   // draw dest and arr points function
   this.drawMainPoints = function () {
     fill(255,0,255, 600);
-    ellipse(this.arrivingCors.x,this.arrivingCors.y,12,12);
-    ellipse(this.destinationCors.x,this.destinationCors.y,12,12)
+
+    if (this._isMainShip && this.wayDots.length > 0) {
+      for (var i = 0; i < this.wayDots.length; i++) {
+        var x = this.wayDots[i].x;
+        var y = this.wayDots[i].y;
+        ellipse(x, y, 12, 12);
+      }
+
+      fill(255,255,255, 1000);
+      stroke(0);
+      textSize(12)
+      text("A", this.wayDots[0].x + 10, this.wayDots[0].y + 10)
+      text("B", this.wayDots[this.wayDots.length - 1].x + 10, this.wayDots[this.wayDots.length - 1].y + 10)
+      fill(255,0,255, 600);
+    } else {
+      ellipse(this.arrivingCors.x,this.arrivingCors.y,12,12);
+      ellipse(this.destinationCors.x,this.destinationCors.y,12,12)
+    }
   }
 
 
   //draw line between dst and arr points function
   this.drawLineBetweenPoints = function () {
-    if (this._isMainShip)
+    if (this._isMainShip) {
       stroke(255);
-    else 
+      for (var i = 0; i < this.wayDots.length - 1; i++) {
+        line(this.wayDots[i].x, this.wayDots[i].y, this.wayDots[i+1].x, this.wayDots[i+1].y);
+      }
+    }
+    else {
       stroke(100);
-    line(this.arrivingCors.x, this.arrivingCors.y, this.destinationCors.x, this.destinationCors.y);
+      line(this.arrivingCors.x, this.arrivingCors.y, this.destinationCors.x, this.destinationCors.y);
+    }
+    
   }
 
 
@@ -195,20 +218,25 @@ const Ship = function (arriving, destination, safeArea, speed) {
     // let distance = this.getDistanceByPoints(this.destinationCors.x, this.destinationCors.y, this.arrivingCors.x, this.arrivingCors.y);
 
     // let distance = this.getDistanceByPoints(this.currentCors.x, this.currentCors.y, this.arrivingCors.x, this.arrivingCors.y);
-    let latlon = {
-      x: mercX2lon(this.currentCors.x),
-      y: mercY2lat(this.currentCors.y)
+    // var latlon = {
+    //   x: mercX2lon(this.currentCors.x),
+    //   y: mercY2lat(this.currentCors.y)
+    // }
+
+    // latlon.x = latlon.x + 0.0001 * this.speed.ms
+    // latlon.y = latlon.y + 0.0001 * this.speed.ms
+
+    // var newCors = {
+    //   x: mercX(latlon.x),
+    //   y: this.getNewYPosition(mercX(latlon.x))
+    // }
+
+    // var distance = this.getDistanceByPoints(this.currentCors.x, this.currentCors.y, newCors.x, newCors.y) * 200;
+    // let distance = this.getDistanceByPoints(this.destinationCors.x, this.destinationCors.y, this.arrivingCors.x, this.arrivingCors.y);
+    let distance = Math.abs(this.destinationCors.x - this.arrivingCors.x) * this.speed.ms * 0.001619140460156832;
+    if (this._isMainShip) {
+      console.log("DISTANCE", distance)
     }
-
-    latlon.x = latlon.x + 0.0001 * this.speed.ms
-    latlon.y = latlon.y + 0.0001 * this.speed.ms
-
-    let newCors = {
-      x: mercX(latlon.x),
-      y: this.getNewYPosition(mercX(latlon.x))
-    }
-
-    let distance = this.getDistanceByPoints(this.currentCors.x, this.currentCors.y, newCors.x, newCors.y) * 200;
 
     if (this.currentCors.x > this.destinationCors.x) {
       this.currentCors.x -= distance;
@@ -220,6 +248,26 @@ const Ship = function (arriving, destination, safeArea, speed) {
 
     if (Math.abs(this.currentCors.x.toFixed(3) - this.destinationCors.x.toFixed(3)) < distance) {
       this._isMoving = false;
+
+      if (this._isMainShip) {
+        if (this.currentWayIndex < this.wayDots.length) {
+          this._isMoving = true;
+
+          this.arrivingCors = {
+            x: this.wayDots[this.currentWayIndex - 1].x,
+            y: this.wayDots[this.currentWayIndex - 1].y
+          }
+          this.destinationCors = {
+            x: this.wayDots[this.currentWayIndex].x,
+            y: this.wayDots[this.currentWayIndex].y
+          }
+
+          this.currentWayIndex = this.currentWayIndex + 1;
+          console.log("Сменили на следующую точку")
+          console.log(this.currentWayIndex)
+          console.log(this.destinationCors)
+        }
+      }
       // noLoop();
     }
 
@@ -383,6 +431,8 @@ function removeArrivedShipFromList (ship) {
 function setup() {
   createCanvas(ww, hh);
 
+  gen.start()
+
   ships = [
     // new Ship(ShipRoadPoints.A4, ShipRoadPoints.B4, 25, 30),
     new Ship(ShipRoadPoints.A4, ShipRoadPoints.B4, 25, 30),
@@ -396,7 +446,28 @@ function setup() {
   // })
 
   ships[0]._isMainShip = true;
-  console.log(ships[0].speed)
+  // for (var i = 0; i < gen.bestRoad.wayDots.length; i++)
+  //   ships[0].wayDots.push(gen.bestRoad.wayDots[i]);
+  // ships[0].wayDots = gen.bestRoad.wayDots;
+  // console.log(ships[0].speed)
+
+  console.log("ships[0].wayDots", ships[0].wayDots)
+
+  for (var i = 0; i < gen.bestRoad.wayDots.length; i++){
+    var x = gen.bestRoad.wayDots[i].x - mercX(clon);
+    var y = gen.bestRoad.wayDots[i].y - mercY(clat);
+    ships[0].wayDots.push(new GPoint(y, x));
+  }
+
+  console.log(ships[0].destinationCors)
+  ships[0].destinationCors = {
+    x: ships[0].wayDots[1].x,
+    y: ships[0].wayDots[1].y
+  }
+
+  console.log("debug", ships[0].destinationCors)
+  console.log("###", ships[0].wayDots)
+  console.log(gen.bestRoad.wayDots)
 
   for (var id in ships) {
     ships[id].updatePosition()
@@ -435,7 +506,7 @@ function setup() {
 
   // console.log(startPoint)
   // console.log("CHECKING BLYAT", startPoint.lng, mercX2lon(mercX(startPoint.lng)))
-  console.log("CHECKING BLYAT", startPoint.lat, mercY2lat(mercY(startPoint.lat)))
+  // console.log("CHECKING BLYAT", startPoint.lat, mercY2lat(mercY(startPoint.lat)))
 }
 
 //********************************* DRAW *********************************
@@ -454,6 +525,7 @@ function draw () {
     for (var id in ships) {
         ships[id].drawLineBetweenPoints()
         ships[id].drawMainPoints();
+        // noLoop()
         ships[0].showCurrentPositionOnMap();
 
         let X = mouseX - width / 2;
