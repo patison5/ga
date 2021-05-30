@@ -174,12 +174,15 @@ class Genetic {
 		// console.log("selfFinish", selfFinish)
 
 		for (var i = 0; i < 10; i++) {
+
+			var xLength = Math.abs(selfStart.x - selfFinish.x) / 4;
+
 			var newWay = new GRoad([
 				selfStart,
-				new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), GMath.randomInteger(selfStart.x, selfFinish.x)),
-				new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), GMath.randomInteger(selfStart.x, selfFinish.x)),
-				new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), GMath.randomInteger(selfStart.x, selfFinish.x)),
-				new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), GMath.randomInteger(selfStart.x, selfFinish.x)),
+				new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), selfStart.x + xLength * 1),
+				new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), selfStart.x + xLength * 2),
+				new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), selfStart.x + xLength * 3),
+				new GPoint(GMath.randomInteger(selfStart.y, selfFinish.y), selfStart.x + xLength * 4),
 				// new GPoint(6, 3),
 				// new GPoint(3, 6),
 				// new GPoint(2, 9),
@@ -195,7 +198,7 @@ class Genetic {
 		for (var start = 0; start < this.amountOfCircles; start++) {
 			this.selection();
 			this.crossing();
-			this.mutating();
+			// this.mutating();
 		}
 
 		this.selection();
@@ -281,13 +284,15 @@ class Genetic {
 		var withCollision = this.childrenRoads.filter(road => road.hasCollision);
 		var withOutCollision = this.childrenRoads.filter(road => !road.hasCollision);
 
-		var sortedWithCollisions = withCollision.sort(function (a,b) {
-			return a.fullDistance() < b.fullDistance()
-		});
+		var sortedWithCollisions = withCollision.sort( this.compare )
+		var sortedWithOutCollisions = withOutCollision.sort( this.compare )
 
-		var sortedWithOutCollisions = withOutCollision.sort(function (a,b) {
-			return a.fullDistance() > b.fullDistance()
-		})
+		var showArr = []
+		for (var i = 0; i < sortedWithOutCollisions.length; i++) {
+			showArr.push(sortedWithOutCollisions[i].fullDistance())
+		}
+		console.log("result", showArr)
+
 
 		sortedWithOutCollisions = sortedWithOutCollisions.concat(sortedWithCollisions);
 
@@ -298,6 +303,16 @@ class Genetic {
 		// console.log("withOutCollision", withOutCollision)
 		// console.log("sortedWithCollisions", sortedWithCollisions)
 		// console.log("sortedWithOutCollisions", sortedWithOutCollisions)
+	}
+
+	compare( a, b ) {
+	  if ( a.fullDistance() < b.fullDistance() ){
+	    return -1;
+	  }
+	  if ( a.fullDistance() > b.fullDistance() ){
+	    return 1;
+	  }
+	  return 0;
 	}
 
 	crossing() {
@@ -322,8 +337,6 @@ class Genetic {
 			var elementId = GMath.randomInteger(0, this.childrenRoads.length - 1);
 			var selectedRoad = this.childrenRoads[elementId];
 			for (var j = 1; j < selectedRoad.wayDots.length - 1; j++) {
-				// var newX = GMath.randomInteger(this.selfFinish.x, this.selfStart.x);
-				// selectedRoad.wayDots[j].x = newX;
 				var newY = GMath.randomInteger(this.selfStart.y, this.selfFinish.y);
 				selectedRoad.wayDots[j].y = newY;
 			}

@@ -233,7 +233,7 @@ const Ship = function (arriving, destination, safeArea, speed) {
 
     // var distance = this.getDistanceByPoints(this.currentCors.x, this.currentCors.y, newCors.x, newCors.y) * 200;
     // let distance = this.getDistanceByPoints(this.destinationCors.x, this.destinationCors.y, this.arrivingCors.x, this.arrivingCors.y);
-    let distance = Math.abs(this.destinationCors.x - this.arrivingCors.x) * this.speed.ms * 0.001619140460156832;
+    let distance = this.speed.ms * 0.001619140460156832 * 100;
     if (this._isMainShip) {
       console.log("DISTANCE", distance)
     }
@@ -322,7 +322,7 @@ const Ship = function (arriving, destination, safeArea, speed) {
       // this.drawNorth()
        for (var i = 1; i < ships.length; i++) {
         var distance = this.getDistanceByPoints(this.currentCors.x, this.currentCors.y, ships[i].currentCors.x, ships[i].currentCors.y)
-        if (distance < 100) {
+        if (distance < 1000) {
           stroke(100);
           line(this.currentCors.x, this.currentCors.y, ships[i].currentCors.x, ships[i].currentCors.y);
 

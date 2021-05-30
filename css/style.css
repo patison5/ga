@@ -1,12 +1,16 @@
 body {
-	/*background: #000;*/
+	background: #191b1b;
+	/*width: 1424px;*/
+}
+canvas {
+	border: 1px solid #ccc;
 }
 .info {}
 .data-info {
 	border: 1px solid #ccc;
 	padding: 10px;
 	/*position: absolute;*/
-	background: rgba(0,0,0, .8);
+	background: #191b1b;
 	color: #fff;
 	border-spacing: 0;
 	margin-bottom: 20px;
@@ -34,6 +38,7 @@ body {
 	background: #191b1b;
 	padding: 15px 15px 10px 15px;
 	color: #fff;
+	border: 1px solid #ccc;
 }
 
 .menu-section {
@@ -88,6 +93,9 @@ body {
 	border-radius: 8px;
 	color: #fff;
 	cursor: pointer;
+}
+.add_ship:hover {
+	background: #1e4344;
 }
 
 
